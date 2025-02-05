@@ -1,0 +1,16 @@
+# Plugin Compilation Stuff
+.cache/*
+.cmake/*
+CMakeCache.txt
+cmake_install.cmake
+cmake-build-*
+CMakeFiles
+Makefile
+compile_commands.json
+Testing/*
+*.cbp
+
+# IDE stuff
+.fleet
+.vscode
+.idea
