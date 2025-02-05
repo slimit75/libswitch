@@ -1,0 +1,3 @@
+[submodule "deps/XPSDK"]
+	path = deps/XPSDK
+	url = https://github.com/slimit75/XPSDK
