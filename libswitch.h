@@ -19,10 +19,11 @@ struct {
  * @param dr_name Name of the switches state dataref. This is for systems, and should not be used for animations.
  * @param dr_anim_name Name of the switch's animation dataref. This is for animations only, and should not be used for animations.
  * @param cmd_name Name of the switch's toggle command. This should be used in clickspots.
+ * @param cmd_desc Description to show up in the X-Plane UI.
  *
  * @return A pointer to the switch object.
  */
-switch_t *sw_basic_init(const char *dr_name, const char *dr_anim_name, const char *cmd_name);
+switch_t *sw_basic_init(const char *dr_name, const char *dr_anim_name, const char *cmd_name, const char *cmd_desc);
 
 /**
  * @brief Refreshes all registered switches.

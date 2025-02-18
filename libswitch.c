@@ -53,7 +53,7 @@ float sw_dr_fetch_anim(void *inRefcon) {
 	return all_sw[(int)inRefcon].anim_pos;
 }
 
-switch_t *sw_basic_init(const char *dr_name, const char *dr_anim_name, const char *cmd_name) {
+switch_t *sw_basic_init(const char *dr_name, const char *dr_anim_name, const char *cmd_name, const char *cmd_desc) {
 	int idx;
 	if (!all_sw) {
 		all_sw = malloc(sizeof(switch_t));
@@ -67,6 +67,7 @@ switch_t *sw_basic_init(const char *dr_name, const char *dr_anim_name, const cha
 	all_sw[idx].anim_pos = 0;
 	all_sw[idx].act_gain = 0;
 
+	XPLMCreateCommand(cmd_name, cmd_desc);
 	XPLMRegisterCommandHandler(all_sw[idx].cmd_toggle, sw_button_cb, 1, (void *)idx);
 	XPLMRegisterDataAccessor(dr_name, xplmType_Int, true, sw_dr_fetch_state, sw_dr_write_state, NULL, NULL, NULL, NULL,
 							 NULL, NULL,
