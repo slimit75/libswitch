@@ -1,6 +1,8 @@
 #ifndef LIBSWITCH_H
 #define LIBSWITCH_H
 
+#include <stdbool.h>
+
 /**
  * @brief Switch 'type'. Not a pointer, but rather an index of all loaded switches.
  */

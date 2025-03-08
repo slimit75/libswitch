@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.30)
 project(libswitch C)
 
-set(CMAKE_C_STANDARD 23)
+set(CMAKE_C_STANDARD 17)
 set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64")
 
 add_definitions(
