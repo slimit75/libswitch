@@ -1,9 +1,15 @@
 #ifndef LIBSWITCH_H
 #define LIBSWITCH_H
 
+/**
+ * @brief Switch 'type'. Not a pointer, but rather an index of all loaded switches.
+ */
 typedef int switch_t;
 
-typedef enum { SW_BASIC, SW_SPRING, SW_MULTI } sw_type;
+/**
+ * @brief Supported 'switch types'. Intended for internal use only, at the moment.
+ */
+typedef enum { SW_BASIC, SW_SPRING, SW_MULTI } sw_type_t;
 
 /**
  * @brief Initialize a basic, 2 position switch
@@ -49,16 +55,55 @@ switch_t sw_multi_init(const char *dr_name, const char *dr_anim_name, const char
 					   const char *cmd_name_r, const char *cmd_desc_r, const int min_range, const int max_range,
 					   const int default_value, const bool starter);
 
+/**
+ * @brief Gets the state of a basic switch.
+ *
+ * @param inRefcon Switch to fetch
+ * @return Current position of the switch (1 is usually on and 2 is usually off)
+ */
 int sw_basic_get_state(void *inRefcon);
 
+/**
+ * @brief Writes the state of a basic switch.
+ *
+ * @param inRefcon Switch to modify
+ * @param inValue New value
+ * @return New position of the switch (1 is usually on and 2 is usually off)
+ */
 void sw_basic_write_state(void *inRefcon, int inValue);
 
+/**
+ * @brief Gets the state of a spring-loaded switch.
+ *
+ * @param inRefcon Switch to fetch
+ * @return Current position of the switch (1 is usually on and 2 is usually off)
+ */
 int sw_spring_get_state(void *inRefcon);
 
+/**
+ * @brief Writes the state of a spring-loaded switch.
+ *
+ * @param inRefcon Switch to modify
+ * @param inValue New value
+ * @return New position of the switch (1 is usually on and 2 is usually off)
+ */
 void sw_spring_write_state(void *inRefcon, int inValue);
 
+/**
+ * @brief Gets the state of a multi-position switch.
+ *
+ * @param inRefcon Switch to fetch
+ * @return Current position of the switch
+ */
 int sw_multi_get_state(void *inRefcon);
 
+/**
+ * @brief Writes the state of a multi-position switch.
+ *
+ * @param inRefcon Switch to modify
+ * @param inValue New value
+ * @return New position of the switch
+ */
 void sw_multi_write_state(void *inRefcon, int inValue);
 
 /**

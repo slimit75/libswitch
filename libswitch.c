@@ -9,7 +9,7 @@
 
 struct {
 	// Internal
-	sw_type type;
+	sw_type_t type;
 
 	// Data for basic switches
 	int state;
@@ -30,6 +30,7 @@ struct {
 sw_t *all_sw;
 int all_sw_size = 0;
 
+// Switch Callbacks
 int sw_basic_cb(XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon) {
 	int i = (int)inRefcon;
 
@@ -87,14 +88,13 @@ int sw_multi_r_cb(XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRe
 	return 1;
 }
 
+// Refresh all animation datarefs
 void sw_ref() {
 	for (int i = 0; i < all_sw_size; i++) {
 		if (all_sw[i].act_gain != 0) {
 			all_sw[i].anim_pos += all_sw[i].act_gain;
 
-			// TODO: holy if statement
-			if (-SWITCH_GAIN < all_sw[i].anim_pos < SWITCH_GAIN) {}
-
+			// We don't want to overshoot the actual current state of the switch
 			if (((all_sw[i].act_gain < 0) && (all_sw[i].anim_pos < (float)all_sw[i].state)) || (
 					(all_sw[i].act_gain > 0) && (all_sw[i].anim_pos > (float)all_sw[i].state))) {
 				all_sw[i].anim_pos = (float)all_sw[i].state;
@@ -107,6 +107,7 @@ void sw_ref() {
 	}
 }
 
+// Callbacks to update the state of the switch. Used by X-Plane and other stakeholders
 int sw_basic_get_state(void *inRefcon) {
 	return all_sw[(int)inRefcon].state;
 }
@@ -146,11 +147,13 @@ double sw_multi_get_anim(void *inRefcon) {
 switch_t sw_init() {
 	int idx;
 	if (all_sw == NULL) {
+		// Allocate initial memory if the array doesn't already exist
 		all_sw = malloc(sizeof(sw_t));
 		all_sw_size = 1;
 		idx = 0;
 	}
 	else {
+		// Expand the array to support our new switch
 		all_sw_size++;
 		all_sw = realloc(all_sw, sizeof(sw_t) * all_sw_size);
 		idx = all_sw_size - 1;
@@ -164,17 +167,19 @@ switch_t sw_init() {
 }
 
 switch_t sw_basic_init(const char *dr_name, const char *dr_anim_name, const char *cmd_name, const char *cmd_desc) {
+	// Initialize the switch
 	int idx = sw_init();
+	all_sw[idx].type = SW_BASIC;
 
+	// Register commands
 	if (cmd_desc == NULL) {
 		cmd_desc = "";
 	}
 
-	all_sw[idx].type = SW_BASIC;
-
 	all_sw[idx].cmd_toggle = XPLMCreateCommand(cmd_name, cmd_desc);
 	XPLMRegisterCommandHandler(all_sw[idx].cmd_toggle, sw_basic_cb, 1, (void *)idx);
 
+	// Register datarefs
 	if (dr_name != NULL) {
 		XPLMRegisterDataAccessor(
 			dr_name,
@@ -223,17 +228,19 @@ switch_t sw_basic_init(const char *dr_name, const char *dr_anim_name, const char
 }
 
 switch_t sw_spring_init(const char *dr_name, const char *dr_anim_name, const char *cmd_name, const char *cmd_desc) {
+	// Initialize the switch
 	int idx = sw_init();
+	all_sw[idx].type = SW_SPRING;
 
+	// Register commands
 	if (cmd_desc == NULL) {
 		cmd_desc = "";
 	}
 
-	all_sw[idx].type = SW_SPRING;
-
 	all_sw[idx].cmd_toggle = XPLMCreateCommand(cmd_name, cmd_desc);
 	XPLMRegisterCommandHandler(all_sw[idx].cmd_toggle, sw_spring_cb, true, (void *)idx);
 
+	// Register datarefs
 	if (dr_name != NULL) {
 		XPLMRegisterDataAccessor(
 			dr_name,
@@ -285,8 +292,8 @@ switch_t sw_multi_init(const char *dr_name, const char *dr_anim_name, const char
 					   const char *cmd_name_r, const char *cmd_desc_r, const int min_range, const int max_range,
 					   const int default_value,
 					   const bool starter) {
+	// Initialize the switch
 	int idx = sw_init();
-
 	all_sw[idx].type = SW_MULTI;
 
 	all_sw[idx].state = default_value;
@@ -294,11 +301,13 @@ switch_t sw_multi_init(const char *dr_name, const char *dr_anim_name, const char
 	all_sw[idx].max = max_range;
 	all_sw[idx].starter = starter;
 
+	// Register commands
 	all_sw[idx].cmd_toggle_l = XPLMCreateCommand(cmd_name_l, cmd_desc_l);
 	all_sw[idx].cmd_toggle_r = XPLMCreateCommand(cmd_name_r, cmd_desc_r);
 	XPLMRegisterCommandHandler(all_sw[idx].cmd_toggle_l, sw_multi_l_cb, true, (void *)idx);
 	XPLMRegisterCommandHandler(all_sw[idx].cmd_toggle_r, sw_multi_r_cb, true, (void *)idx);
 
+	// Register datarefs
 	if (dr_name != NULL) {
 		XPLMRegisterDataAccessor(
 			dr_name,
@@ -347,6 +356,7 @@ switch_t sw_multi_init(const char *dr_name, const char *dr_anim_name, const char
 }
 
 void sw_destroy() {
+	// Unregister all commands
 	for (int i = 0; i < all_sw_size; i++) {
 		switch (all_sw[i].type) {
 			case SW_SPRING:
@@ -361,5 +371,6 @@ void sw_destroy() {
 		}
 	}
 
+	// Free all memory
 	free(all_sw);
 }
