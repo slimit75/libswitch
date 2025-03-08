@@ -1,16 +1,20 @@
 #include "libswitch.h"
 
+#include <assert.h>
 #include <stdlib.h>
 #include <XPLMDataAccess.h>
 #include <XPLMUtilities.h>
 
-#define SWITCH_GAIN 0.2f
+#define SWITCH_GAIN 0.2
 
 struct {
+	// Internal
+	sw_type type;
+
 	// Data for basic switches
 	int state;
-	float act_gain;
-	float anim_pos;
+	double act_gain;
+	double anim_pos;
 	XPLMDataRef dr_state;
 	XPLMDataRef dr_anim;
 	XPLMCommandRef cmd_toggle;
@@ -23,10 +27,8 @@ struct {
 	XPLMCommandRef cmd_toggle_r;
 } typedef sw_t;
 
-//sw_t *all_basic_sw;
-//sw_t *all_spring_sw;
-//sw_t *all_multi_sw;
 sw_t *all_sw;
+int all_sw_size = 0;
 
 int sw_basic_cb(XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon) {
 	int i = (int)inRefcon;
@@ -84,11 +86,13 @@ int sw_multi_r_cb(XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRe
 }
 
 void sw_ref() {
-	for (int i = 0; i < (sizeof(&all_sw) / sizeof(all_sw[0])); i++) {
+	for (int i = 0; i < all_sw_size; i++) {
 		if (all_sw[i].act_gain != 0) {
 			all_sw[i].anim_pos += all_sw[i].act_gain;
 
 			// TODO: holy if statement
+			if (-SWITCH_GAIN < all_sw[i].anim_pos < SWITCH_GAIN) {}
+
 			if (((all_sw[i].act_gain < 0) && (all_sw[i].anim_pos < (float)all_sw[i].state)) || (
 					(all_sw[i].act_gain > 0) && (all_sw[i].anim_pos > (float)all_sw[i].state))) {
 				all_sw[i].anim_pos = (float)all_sw[i].state;
@@ -109,7 +113,7 @@ void sw_basic_write_state(void *inRefcon, int inValue) {
 	all_sw[(int)inRefcon].state = inValue;
 }
 
-float sw_basic_get_anim(void *inRefcon) {
+double sw_basic_get_anim(void *inRefcon) {
 	return all_sw[(int)inRefcon].anim_pos;
 }
 
@@ -121,7 +125,7 @@ void sw_spring_write_state(void *inRefcon, int inValue) {
 	all_sw[(int)inRefcon].state = inValue;
 }
 
-float sw_spring_get_anim(void *inRefcon) {
+double sw_spring_get_anim(void *inRefcon) {
 	return all_sw[(int)inRefcon].anim_pos;
 }
 
@@ -133,69 +137,83 @@ void sw_multi_write_state(void *inRefcon, int inValue) {
 	all_sw[(int)inRefcon].state = inValue;
 }
 
-float sw_multi_get_anim(void *inRefcon) {
+double sw_multi_get_anim(void *inRefcon) {
 	return all_sw[(int)inRefcon].anim_pos;
 }
 
-switch_t sw_basic_init(const char *dr_name, const char *dr_anim_name, const char *cmd_name, const char *cmd_desc) {
+switch_t sw_init() {
 	int idx;
-	if (all_sw == nullptr) {
-		all_sw = malloc(sizeof(all_sw[0]));
+	if (all_sw == NULL) {
+		all_sw = malloc(sizeof(sw_t));
+		all_sw_size = 1;
 		idx = 0;
 	}
 	else {
-		all_sw = realloc(all_sw, sizeof(&all_sw) + sizeof(all_sw[0]));
-		idx = (sizeof(&all_sw) / sizeof(all_sw[0]));
+		all_sw_size++;
+		all_sw = realloc(all_sw, sizeof(sw_t) * all_sw_size);
+		idx = all_sw_size - 1;
 	}
 
 	all_sw[idx].state = 0;
 	all_sw[idx].anim_pos = 0;
 	all_sw[idx].act_gain = 0;
 
+	return idx;
+}
+
+switch_t sw_basic_init(const char *dr_name, const char *dr_anim_name, const char *cmd_name, const char *cmd_desc) {
+	int idx = sw_init();
+
+	if (cmd_desc == NULL) {
+		cmd_desc = "";
+	}
+
+	all_sw[idx].type = SW_BASIC;
+
 	all_sw[idx].cmd_toggle = XPLMCreateCommand(cmd_name, cmd_desc);
 	XPLMRegisterCommandHandler(all_sw[idx].cmd_toggle, sw_basic_cb, 1, (void *)idx);
 
-	if (dr_name != nullptr) {
+	if (dr_name != NULL) {
 		XPLMRegisterDataAccessor(
 			dr_name,
 			xplmType_Int,
 			true,
 			sw_basic_get_state,
 			sw_basic_write_state,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
 			(void *)idx,
 			(void *)idx
 		);
 	}
 
-	if (dr_anim_name != nullptr) {
+	if (dr_anim_name != NULL) {
 		XPLMRegisterDataAccessor(
 			dr_anim_name,
-			xplmType_Float,
+			xplmType_Double,
 			false,
-			nullptr,
-			nullptr,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
 			sw_basic_get_anim,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
 			(void *)idx,
-			nullptr
+			NULL
 		);
 	}
 
@@ -203,64 +221,58 @@ switch_t sw_basic_init(const char *dr_name, const char *dr_anim_name, const char
 }
 
 switch_t sw_spring_init(const char *dr_name, const char *dr_anim_name, const char *cmd_name, const char *cmd_desc) {
-	int idx;
-	if (all_sw == nullptr) {
-		all_sw = malloc(sizeof(all_sw[0]));
-		idx = 0;
-	}
-	else {
-		all_sw = realloc(all_sw, sizeof(&all_sw) + sizeof(all_sw[0]));
-		idx = (sizeof(&all_sw) / sizeof(all_sw[0]));
+	int idx = sw_init();
+
+	if (cmd_desc == NULL) {
+		cmd_desc = "";
 	}
 
-	all_sw[idx].state = 0;
-	all_sw[idx].anim_pos = 0;
-	all_sw[idx].act_gain = 0;
+	all_sw[idx].type = SW_SPRING;
 
 	all_sw[idx].cmd_toggle = XPLMCreateCommand(cmd_name, cmd_desc);
 	XPLMRegisterCommandHandler(all_sw[idx].cmd_toggle, sw_spring_cb, true, (void *)idx);
 
-	if (dr_name != nullptr) {
+	if (dr_name != NULL) {
 		XPLMRegisterDataAccessor(
 			dr_name,
 			xplmType_Int,
 			true,
 			sw_spring_get_state,
 			sw_spring_write_state,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
 			(void *)idx,
 			(void *)idx
 		);
 	}
 
-	if (dr_anim_name != nullptr) {
+	if (dr_anim_name != NULL) {
 		XPLMRegisterDataAccessor(
 			dr_anim_name,
-			xplmType_Float,
+			xplmType_Double,
 			false,
-			nullptr,
-			nullptr,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
 			sw_spring_get_anim,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
 			(void *)idx,
-			nullptr
+			NULL
 		);
 	}
 
@@ -268,21 +280,14 @@ switch_t sw_spring_init(const char *dr_name, const char *dr_anim_name, const cha
 }
 
 switch_t sw_multi_init(const char *dr_name, const char *dr_anim_name, const char *cmd_name_l, const char *cmd_desc_l,
-					   const char *cmd_name_r, const char *cmd_desc_r, int min_range, int max_range, int default_value,
-					   bool starter) {
-	int idx;
-	if (all_sw == nullptr) {
-		all_sw = malloc(sizeof(all_sw[0]));
-		idx = 0;
-	}
-	else {
-		all_sw = realloc(all_sw, sizeof(&all_sw) + sizeof(all_sw[0]));
-		idx = (sizeof(&all_sw) / sizeof(all_sw[0]));
-	}
+					   const char *cmd_name_r, const char *cmd_desc_r, const int min_range, const int max_range,
+					   const int default_value,
+					   const bool starter) {
+	int idx = sw_init();
+
+	all_sw[idx].type = SW_MULTI;
 
 	all_sw[idx].state = default_value;
-	all_sw[idx].anim_pos = 0;
-	all_sw[idx].act_gain = 0;
 	all_sw[idx].min = min_range;
 	all_sw[idx].max = max_range;
 	all_sw[idx].starter = starter;
@@ -292,47 +297,47 @@ switch_t sw_multi_init(const char *dr_name, const char *dr_anim_name, const char
 	XPLMRegisterCommandHandler(all_sw[idx].cmd_toggle_l, sw_multi_l_cb, true, (void *)idx);
 	XPLMRegisterCommandHandler(all_sw[idx].cmd_toggle_r, sw_multi_r_cb, true, (void *)idx);
 
-	if (dr_name != nullptr) {
+	if (dr_name != NULL) {
 		XPLMRegisterDataAccessor(
 			dr_name,
 			xplmType_Int,
 			true,
 			sw_multi_get_state,
 			sw_multi_write_state,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
 			(void *)idx,
 			(void *)idx
 		);
 	}
 
-	if (dr_anim_name != nullptr) {
+	if (dr_anim_name != NULL) {
 		XPLMRegisterDataAccessor(
 			dr_anim_name,
-			xplmType_Float,
+			xplmType_Double,
 			false,
-			nullptr,
-			nullptr,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
 			sw_multi_get_anim,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
-			nullptr,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
 			(void *)idx,
-			nullptr
+			NULL
 		);
 	}
 
@@ -340,17 +345,18 @@ switch_t sw_multi_init(const char *dr_name, const char *dr_anim_name, const char
 }
 
 void sw_destroy() {
-	for (int i = 0; i < (sizeof(&all_sw) / sizeof(all_sw[0])); i++) {
-		XPLMUnregisterCommandHandler(all_sw[i].cmd_toggle, sw_basic_cb, 1, (void *)i);
-	}
-
-	for (int i = 0; i < (sizeof(&all_sw) / sizeof(all_sw[0])); i++) {
-		XPLMUnregisterCommandHandler(all_sw[i].cmd_toggle, sw_spring_cb, 1, (void *)i);
-	}
-
-	for (int i = 0; i < (sizeof(&all_sw) / sizeof(all_sw[0])); i++) {
-		XPLMUnregisterCommandHandler(all_sw[i].cmd_toggle_l, sw_multi_l_cb, 1, (void *)i);
-		XPLMUnregisterCommandHandler(all_sw[i].cmd_toggle_r, sw_multi_r_cb, 1, (void *)i);
+	for (int i = 0; i < all_sw_size; i++) {
+		switch (all_sw[i].type) {
+			case SW_SPRING:
+				XPLMUnregisterCommandHandler(all_sw[i].cmd_toggle, sw_spring_cb, 1, (void *)i);
+				break;
+			case SW_MULTI:
+				XPLMUnregisterCommandHandler(all_sw[i].cmd_toggle_l, sw_multi_l_cb, 1, (void *)i);
+				XPLMUnregisterCommandHandler(all_sw[i].cmd_toggle_r, sw_multi_r_cb, 1, (void *)i);
+				break;
+			default:
+				XPLMUnregisterCommandHandler(all_sw[i].cmd_toggle, sw_basic_cb, 1, (void *)i);
+		}
 	}
 
 	free(all_sw);

@@ -3,6 +3,8 @@
 
 typedef int switch_t;
 
+typedef enum { SW_BASIC, SW_SPRING, SW_MULTI } sw_type;
+
 /**
  * @brief Initialize a basic, 2 position switch
  *
@@ -43,15 +45,20 @@ switch_t sw_spring_init(const char *dr_name, const char *dr_anim_name, const cha
  *
  * @return An ID for the switch.
  */
-switch_t sw_multi_init(const char *dr_name, const char *dr_anim_name, const char *cmd_name_l, const char *cmd_desc_l, const char *cmd_name_r, const char *cmd_desc_r, int min_range, int max_range, int default_value, bool starter);
+switch_t sw_multi_init(const char *dr_name, const char *dr_anim_name, const char *cmd_name_l, const char *cmd_desc_l,
+					   const char *cmd_name_r, const char *cmd_desc_r, const int min_range, const int max_range,
+					   const int default_value, const bool starter);
 
 int sw_basic_get_state(void *inRefcon);
+
 void sw_basic_write_state(void *inRefcon, int inValue);
 
 int sw_spring_get_state(void *inRefcon);
+
 void sw_spring_write_state(void *inRefcon, int inValue);
 
 int sw_multi_get_state(void *inRefcon);
+
 void sw_multi_write_state(void *inRefcon, int inValue);
 
 /**
