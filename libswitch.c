@@ -33,14 +33,16 @@ int all_sw_size = 0;
 int sw_basic_cb(XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon) {
 	int i = (int)inRefcon;
 
-	if (all_sw[i].state == 0) {
-		all_sw[i].act_gain = SWITCH_GAIN;
-	}
-	else {
-		all_sw[i].act_gain = -SWITCH_GAIN;
-	}
+	if (inPhase == 0) {
+		if (all_sw[i].state == 0) {
+			all_sw[i].act_gain = SWITCH_GAIN;
+		}
+		else {
+			all_sw[i].act_gain = -SWITCH_GAIN;
+		}
 
-	all_sw[i].state = !all_sw[i].state;
+		all_sw[i].state = !all_sw[i].state;
+	}
 
 	return 1;
 }
