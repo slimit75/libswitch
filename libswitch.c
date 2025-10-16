@@ -45,7 +45,7 @@ int sw_basic_cb(XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefc
 		all_sw[i].state = !all_sw[i].state;
 	}
 
-	return 1;
+	return xplm_CommandContinue;
 }
 
 int sw_spring_cb(XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon) {
@@ -59,7 +59,7 @@ int sw_spring_cb(XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRef
 		all_sw[i].act_gain = -SWITCH_GAIN;
 		all_sw[i].state = 0;
 	}
-	return 1;
+	return xplm_CommandContinue;
 }
 
 int sw_multi_l_cb(XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon) {
@@ -70,7 +70,7 @@ int sw_multi_l_cb(XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRe
 		all_sw[i].state -= 1;
 	}
 
-	return 1;
+	return xplm_CommandContinue;
 }
 
 int sw_multi_r_cb(XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRefcon) {
@@ -85,7 +85,7 @@ int sw_multi_r_cb(XPLMCommandRef inCommand, XPLMCommandPhase inPhase, void *inRe
 		all_sw[i].state -= 1;
 	}
 
-	return 1;
+	return xplm_CommandContinue;
 }
 
 // Refresh all animation datarefs
@@ -176,7 +176,12 @@ switch_t sw_basic_init(const char *dr_name, const char *dr_anim_name, const char
 		cmd_desc = "";
 	}
 
-	all_sw[idx].cmd_toggle = XPLMCreateCommand(cmd_name, cmd_desc);
+	if (XPLMFindCommand(cmd_name) == NULL) {
+		all_sw[idx].cmd_toggle = XPLMCreateCommand(cmd_name, cmd_desc);
+	}
+	else {
+		all_sw[idx].cmd_toggle = XPLMFindCommand(cmd_name);
+	}
 	XPLMRegisterCommandHandler(all_sw[idx].cmd_toggle, sw_basic_cb, 1, (void *)idx);
 
 	// Register datarefs
@@ -237,7 +242,12 @@ switch_t sw_spring_init(const char *dr_name, const char *dr_anim_name, const cha
 		cmd_desc = "";
 	}
 
-	all_sw[idx].cmd_toggle = XPLMCreateCommand(cmd_name, cmd_desc);
+	if (XPLMFindCommand(cmd_name) == NULL) {
+		all_sw[idx].cmd_toggle = XPLMCreateCommand(cmd_name, cmd_desc);
+	}
+	else {
+		all_sw[idx].cmd_toggle = XPLMFindCommand(cmd_name);
+	}
 	XPLMRegisterCommandHandler(all_sw[idx].cmd_toggle, sw_spring_cb, true, (void *)idx);
 
 	// Register datarefs
@@ -302,10 +312,19 @@ switch_t sw_multi_init(const char *dr_name, const char *dr_anim_name, const char
 	all_sw[idx].starter = starter;
 
 	// Register commands
-	all_sw[idx].cmd_toggle_l = XPLMCreateCommand(cmd_name_l, cmd_desc_l);
-	all_sw[idx].cmd_toggle_r = XPLMCreateCommand(cmd_name_r, cmd_desc_r);
-	XPLMRegisterCommandHandler(all_sw[idx].cmd_toggle_l, sw_multi_l_cb, true, (void *)idx);
-	XPLMRegisterCommandHandler(all_sw[idx].cmd_toggle_r, sw_multi_r_cb, true, (void *)idx);
+	if (XPLMFindCommand(cmd_name_l) == NULL) {
+		all_sw[idx].cmd_toggle_l = XPLMCreateCommand(cmd_name_l, cmd_desc_l);
+	}
+	else {
+		all_sw[idx].cmd_toggle_l = XPLMFindCommand(cmd_name_l);
+	}
+
+	if (XPLMFindCommand(cmd_name_r) == NULL) {
+		all_sw[idx].cmd_toggle_r = XPLMCreateCommand(cmd_name_r, cmd_desc_r);
+	}
+	else {
+		all_sw[idx].cmd_toggle_r = XPLMFindCommand(cmd_name_r);
+	}
 
 	// Register datarefs
 	if (dr_name != NULL) {
