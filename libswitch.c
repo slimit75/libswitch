@@ -326,6 +326,9 @@ switch_t sw_multi_init(const char *dr_name, const char *dr_anim_name, const char
 		all_sw[idx].cmd_toggle_r = XPLMFindCommand(cmd_name_r);
 	}
 
+	XPLMRegisterCommandHandler(all_sw[idx].cmd_toggle_l, sw_multi_l_cb, true, (void *)idx);
+	XPLMRegisterCommandHandler(all_sw[idx].cmd_toggle_r, sw_multi_r_cb, true, (void *)idx);
+
 	// Register datarefs
 	if (dr_name != NULL) {
 		XPLMRegisterDataAccessor(
